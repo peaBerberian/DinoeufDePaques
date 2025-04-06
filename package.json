@@ -1,0 +1,26 @@
+{
+  "name": "dinoeuf-de-paques",
+  "version": "0.1.0",
+  "description": "Poorly-implemented dinosaur game, in a single embeddable JS file.",
+  "homepage": "https://github.com/peaBerberian/DinoeufDePaques#readme",
+  "bugs": {
+    "url": "https://github.com/peaBerberian/DinoeufDePaques/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/peaBerberian/DinoeufDePaques.git"
+  },
+  "license": "MIT",
+  "author": "peaberberian",
+  "type": "module",
+  "main": "bundles/dinoeufdepaques.js",
+  "dependencies": {
+    "esbuild": "^0.25.1",
+    "prettier": "3.5.3"
+  },
+  "scripts": {
+    "build": "./build.mjs --minify",
+    "fmt": "prettier --write .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
