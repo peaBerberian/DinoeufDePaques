@@ -135,15 +135,17 @@ function nouvelleIteration(temps) {
     tempsDebutDeJeu = temps;
   }
 
-  let tempsRestant =
+  let tempsRestantAEcouler =
     tempsDerniereIteration === undefined ? 0 : temps - tempsDerniereIteration;
   tempsDerniereIteration = temps;
 
-  while (tempsRestant > 0) {
+  while (tempsRestantAEcouler > 0) {
     const delta =
-      tempsRestant < UNITE_DE_TEMPS_MS ? tempsRestant : UNITE_DE_TEMPS_MS;
-    tempsRestant -= delta;
-    const tempsIterationEnCours = tempsDerniereIteration - tempsRestant;
+      tempsRestantAEcouler < UNITE_DE_TEMPS_MS
+        ? tempsRestantAEcouler
+        : UNITE_DE_TEMPS_MS;
+    tempsRestantAEcouler -= delta;
+    const tempsIterationEnCours = tempsDerniereIteration - tempsRestantAEcouler;
     const tempsDepuisDebut = tempsIterationEnCours - tempsDebutDeJeu;
     const tempsPourChangerDePatte =
       Math.min(tempsDepuisDebut / TEMPS_MS_AVANT_VITESSE_MAX, 1) *
