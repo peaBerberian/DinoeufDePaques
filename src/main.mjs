@@ -12,11 +12,12 @@ const LARGEUR_DU_CANVAS = 1000;
 const DECALAGE_GAUCHE_COMMENCE_DINO = 30;
 const DECALAGE_BAS_FINIT_DINO = 30;
 
-const DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MS = 200;
+const DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MIN_MS = 400;
+const DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MAX_MS = 20;
 const DINO_SAUT_ANIMATION_ETAPE_MS = 15;
 const PAYSAGE_INTERVAL_DEFILEMENT_VITESSE_MIN_PIX_PER_MS = 2;
 const PAYSAGE_INTERVAL_DEFILEMENT_VITESSE_MAX_PIX_PER_MS = 15;
-const TEMPS_MS_AVANT_VITESSE_MAX = 60000;
+const TEMPS_MS_AVANT_VITESSE_MAX = 120000;
 const DINO_MAX_HAUTEUR_SAUT = 180;
 const DINO_SAUT_INCREMENT_MAX = 40;
 const DINO_SAUT_INCREMENT_MIN = 3;
@@ -54,7 +55,7 @@ let tempsDerniereIteration;
 let estDinoSurSaPatteGauche = true;
 let directionSautEnHaut = true;
 let positionSautDino = null;
-let restantMsPatteAnim = DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MS;
+let restantMsPatteAnim = DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MIN_MS;
 let restantMsSauteAnim = DINO_SAUT_ANIMATION_ETAPE_MS;
 let lesCactus = [];
 const lesLignesDuSol = [];
@@ -66,7 +67,7 @@ function nouveauJeu() {
   estDinoSurSaPatteGauche = true;
   directionSautEnHaut = true;
   positionSautDino = null;
-  restantMsPatteAnim = DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MS;
+  restantMsPatteAnim = DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MIN_MS;
   restantMsSauteAnim = DINO_SAUT_ANIMATION_ETAPE_MS;
   lesCactus.length = 0;
   lesLignesDuSol.length = 0;
@@ -143,6 +144,12 @@ function nouvelleIteration(temps) {
       tempsRestant < UNITE_DE_TEMPS_MS ? tempsRestant : UNITE_DE_TEMPS_MS;
     tempsRestant -= delta;
     const tempsIterationEnCours = tempsDerniereIteration - tempsRestant;
+    const tempsDepuisDebut = tempsIterationEnCours - tempsDebutDeJeu;
+    const tempsPourChangerDePatte =
+      Math.min(tempsDepuisDebut / TEMPS_MS_AVANT_VITESSE_MAX, 1) *
+        (DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MAX_MS -
+          DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MIN_MS) +
+      DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MIN_MS;
     if (positionSautDino !== null) {
       restantMsSauteAnim -= delta;
       if (restantMsSauteAnim <= 0) {
@@ -163,7 +170,7 @@ function nouvelleIteration(temps) {
           if (positionSautDino - diff <= 0) {
             directionSautEnHaut = true;
             positionSautDino = null;
-            restantMsPatteAnim = DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MS;
+            restantMsPatteAnim = tempsPourChangerDePatte;
             estDinoSurSaPatteGauche = !estDinoSurSaPatteGauche;
           } else {
             positionSautDino -= diff;
@@ -177,11 +184,10 @@ function nouvelleIteration(temps) {
       restantMsPatteAnim -= delta;
       if (restantMsPatteAnim <= 0) {
         estDinoSurSaPatteGauche = !estDinoSurSaPatteGauche;
-        restantMsPatteAnim += DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MS;
+        restantMsPatteAnim += tempsPourChangerDePatte;
       }
     }
 
-    const tempsDepuisDebut = tempsIterationEnCours - tempsDebutDeJeu;
     const vitesse =
       Math.min(tempsDepuisDebut / TEMPS_MS_AVANT_VITESSE_MAX, 1) *
         (PAYSAGE_INTERVAL_DEFILEMENT_VITESSE_MAX_PIX_PER_MS -
@@ -198,8 +204,7 @@ function nouvelleIteration(temps) {
       return;
     }
   }
-  const tempsDepuisDebut = temps - tempsDebutDeJeu;
-  metAJourLAffichage(tempsDepuisDebut);
+  metAJourLAffichage(temps - tempsDebutDeJeu);
   window.requestAnimationFrame(nouvelleIteration);
 }
 
@@ -407,8 +412,6 @@ function genereDesCactus(decalage, difficulté) {
         nouveauCactus += imgCactus.naturalWidth + 1;
       }
       if (difficulté >= 4 && aleatoire < 0.2) {
-        lesCactus.push(nouveauCactus);
-        nouveauCactus += imgCactus.naturalWidth + 1;
         lesCactus.push(nouveauCactus);
         nouveauCactus += imgCactus.naturalWidth + 1;
       }
