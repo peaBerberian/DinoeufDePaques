@@ -14,13 +14,13 @@ const DECALAGE_BAS_FINIT_DINO = 30;
 
 const DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MS = 200;
 const DINO_SAUT_ANIMATION_ETAPE_MS = 15;
-const PAYSAGE_INTERVAL_DEFILEMENT_MS = 5;
-const PAYSAGE_INTERVAL_DEFILEMENT_VITESSE_MIN = 5;
-const PAYSAGE_INTERVAL_DEFILEMENT_VITESSE_MAX = 20;
-const TEMPS_MS_AVANT_VITESSE_MAX = 40000;
+const PAYSAGE_INTERVAL_DEFILEMENT_VITESSE_MIN_PIX_PER_MS = 2;
+const PAYSAGE_INTERVAL_DEFILEMENT_VITESSE_MAX_PIX_PER_MS = 15;
+const TEMPS_MS_AVANT_VITESSE_MAX = 60000;
 const DINO_MAX_HAUTEUR_SAUT = 180;
 const DINO_SAUT_INCREMENT_MAX = 40;
-const DINO_SAUT_INCREMENT_MIN = 7;
+const DINO_SAUT_INCREMENT_MIN = 3;
+const UNITE_DE_TEMPS_MS = 10;
 
 const POSITION_Y_SOL = HAUTEUR_DU_CANVAS - (DECALAGE_BAS_FINIT_DINO + 30);
 
@@ -56,7 +56,6 @@ let directionSautEnHaut = true;
 let positionSautDino = null;
 let restantMsPatteAnim = DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MS;
 let restantMsSauteAnim = DINO_SAUT_ANIMATION_ETAPE_MS;
-let restantMsPaysage = PAYSAGE_INTERVAL_DEFILEMENT_MS;
 let lesCactus = [];
 const lesLignesDuSol = [];
 
@@ -69,7 +68,6 @@ function nouveauJeu() {
   positionSautDino = null;
   restantMsPatteAnim = DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MS;
   restantMsSauteAnim = DINO_SAUT_ANIMATION_ETAPE_MS;
-  restantMsPaysage = PAYSAGE_INTERVAL_DEFILEMENT_MS;
   lesCactus.length = 0;
   lesLignesDuSol.length = 0;
   genereDesCactus(800, 1);
@@ -109,6 +107,8 @@ Promise.all([
     }
   };
 
+  // afficheLeCiel();
+  // afficheLeDesert();
   afficheLeScore(0);
   afficheLeSol();
   afficheLeDino();
@@ -134,70 +134,72 @@ function nouvelleIteration(temps) {
     tempsDebutDeJeu = temps;
   }
 
-  const delta =
+  let tempsRestant =
     tempsDerniereIteration === undefined ? 0 : temps - tempsDerniereIteration;
   tempsDerniereIteration = temps;
 
-  restantMsPaysage -= delta;
-  if (restantMsPaysage <= 0) {
-    restantMsPaysage += PAYSAGE_INTERVAL_DEFILEMENT_MS;
-  }
-
-  if (positionSautDino !== null) {
-    restantMsSauteAnim -= delta;
-    if (restantMsSauteAnim <= 0) {
-      if (positionSautDino >= DINO_MAX_HAUTEUR_SAUT) {
-        directionSautEnHaut = false;
-        positionSautDino = DINO_MAX_HAUTEUR_SAUT;
-      }
-      const ratio =
-        (DINO_MAX_HAUTEUR_SAUT - positionSautDino) / DINO_MAX_HAUTEUR_SAUT;
-      let diff = Math.ceil(DINO_SAUT_INCREMENT_MAX * ratio);
-      if (diff < DINO_SAUT_INCREMENT_MIN) {
-        diff = DINO_SAUT_INCREMENT_MIN;
-      }
-      if (directionSautEnHaut) {
-        positionSautDino += diff;
-        positionSautDino = Math.min(positionSautDino, DINO_MAX_HAUTEUR_SAUT);
-      } else {
-        if (positionSautDino - diff <= 0) {
-          directionSautEnHaut = true;
-          positionSautDino = null;
-          restantMsPatteAnim = DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MS;
-          estDinoSurSaPatteGauche = !estDinoSurSaPatteGauche;
-        } else {
-          positionSautDino -= diff;
+  while (tempsRestant > 0) {
+    const delta =
+      tempsRestant < UNITE_DE_TEMPS_MS ? tempsRestant : UNITE_DE_TEMPS_MS;
+    tempsRestant -= delta;
+    const tempsIterationEnCours = tempsDerniereIteration - tempsRestant;
+    if (positionSautDino !== null) {
+      restantMsSauteAnim -= delta;
+      if (restantMsSauteAnim <= 0) {
+        if (positionSautDino >= DINO_MAX_HAUTEUR_SAUT) {
+          directionSautEnHaut = false;
+          positionSautDino = DINO_MAX_HAUTEUR_SAUT;
         }
+        const ratio =
+          (DINO_MAX_HAUTEUR_SAUT - positionSautDino) / DINO_MAX_HAUTEUR_SAUT;
+        let diff = Math.ceil(DINO_SAUT_INCREMENT_MAX * ratio);
+        if (diff < DINO_SAUT_INCREMENT_MIN) {
+          diff = DINO_SAUT_INCREMENT_MIN;
+        }
+        if (directionSautEnHaut) {
+          positionSautDino += diff;
+          positionSautDino = Math.min(positionSautDino, DINO_MAX_HAUTEUR_SAUT);
+        } else {
+          if (positionSautDino - diff <= 0) {
+            directionSautEnHaut = true;
+            positionSautDino = null;
+            restantMsPatteAnim = DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MS;
+            estDinoSurSaPatteGauche = !estDinoSurSaPatteGauche;
+          } else {
+            positionSautDino -= diff;
+          }
+        }
+        restantMsSauteAnim += DINO_SAUT_ANIMATION_ETAPE_MS;
       }
-      restantMsSauteAnim += DINO_SAUT_ANIMATION_ETAPE_MS;
+    }
+
+    if (restantMsPatteAnim !== null) {
+      restantMsPatteAnim -= delta;
+      if (restantMsPatteAnim <= 0) {
+        estDinoSurSaPatteGauche = !estDinoSurSaPatteGauche;
+        restantMsPatteAnim += DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MS;
+      }
+    }
+
+    const tempsDepuisDebut = tempsIterationEnCours - tempsDebutDeJeu;
+    const vitesse =
+      Math.min(tempsDepuisDebut / TEMPS_MS_AVANT_VITESSE_MAX, 1) *
+        (PAYSAGE_INTERVAL_DEFILEMENT_VITESSE_MAX_PIX_PER_MS -
+          PAYSAGE_INTERVAL_DEFILEMENT_VITESSE_MIN_PIX_PER_MS) +
+      PAYSAGE_INTERVAL_DEFILEMENT_VITESSE_MIN_PIX_PER_MS;
+
+    bougeLesCactus(vitesse);
+    bougeLesLignesDuSol(vitesse);
+
+    if (verifieLesCollisionsEntreDinoEtLesCactus()) {
+      metAJourLAffichage(tempsDepuisDebut);
+      afficheLeGamové();
+      jeuEnCours = false;
+      return;
     }
   }
-
-  if (restantMsPatteAnim !== null) {
-    restantMsPatteAnim -= delta;
-    if (restantMsPatteAnim <= 0) {
-      estDinoSurSaPatteGauche = !estDinoSurSaPatteGauche;
-      restantMsPatteAnim += DINO_INTERVAL_POUR_CHANGER_DE_PATTE_MS;
-    }
-  }
-
   const tempsDepuisDebut = temps - tempsDebutDeJeu;
-  const vitesse =
-    Math.min(tempsDepuisDebut / TEMPS_MS_AVANT_VITESSE_MAX, 1) *
-      (PAYSAGE_INTERVAL_DEFILEMENT_VITESSE_MAX -
-        PAYSAGE_INTERVAL_DEFILEMENT_VITESSE_MIN) +
-    PAYSAGE_INTERVAL_DEFILEMENT_VITESSE_MIN;
-
-  bougeLesCactus(vitesse);
-  bougeLesLignesDuSol(vitesse);
-
   metAJourLAffichage(tempsDepuisDebut);
-
-  if (verifieLesCollisionsEntreDinoEtLesCactus()) {
-    afficheLeGamové();
-    jeuEnCours = false;
-    return;
-  }
   window.requestAnimationFrame(nouvelleIteration);
 }
 
@@ -205,12 +207,31 @@ function metAJourLAffichage(tempsDepuisDebut) {
   // AFAIRE: Juste ce qui a changé
   nettoieToutLEcran();
 
+  // afficheLeCiel();
+  // afficheLeDesert();
   afficheLeScore(tempsDepuisDebut);
   afficheLeSol();
   afficheLesLignesDuSol();
   afficheLesCactus();
   afficheLeDino();
 }
+
+// function afficheLeCiel() {
+//   contexte.fillStyle = "#87ceeb66";
+//   contexte.fillRect(0, 0, LARGEUR_DU_CANVAS, POSITION_Y_SOL);
+//   contexte.fillStyle = "#000000";
+// }
+//
+// function afficheLeDesert() {
+//   contexte.fillStyle = "#fad5a566";
+//   contexte.fillRect(
+//     0,
+//     POSITION_Y_SOL,
+//     LARGEUR_DU_CANVAS,
+//     HAUTEUR_DU_CANVAS - POSITION_Y_SOL,
+//   );
+//   contexte.fillStyle = "#000000";
+// }
 
 function afficheLeSol() {
   contexte.beginPath();
@@ -312,7 +333,7 @@ function bougeLesCactus(vitesse) {
 
   const dernierCactus = lesCactus[lesCactus.length - 1];
   if (dernierCactus === undefined || dernierCactus <= LARGEUR_DU_CANVAS) {
-    genereDesCactus(dernierCactus ?? LARGEUR_DU_CANVAS, vitesse / 3);
+    genereDesCactus(dernierCactus ?? LARGEUR_DU_CANVAS, vitesse / 2);
   }
 }
 
@@ -382,11 +403,17 @@ function genereDesCactus(decalage, difficulté) {
       if (difficulté >= 5 && aleatoire < 0.1) {
         lesCactus.push(nouveauCactus);
         nouveauCactus += imgCactus.naturalWidth + 1;
+        lesCactus.push(nouveauCactus);
+        nouveauCactus += imgCactus.naturalWidth + 1;
       }
       if (difficulté >= 4 && aleatoire < 0.2) {
         lesCactus.push(nouveauCactus);
         nouveauCactus += imgCactus.naturalWidth + 1;
+        lesCactus.push(nouveauCactus);
+        nouveauCactus += imgCactus.naturalWidth + 1;
       }
+      lesCactus.push(nouveauCactus);
+      nouveauCactus += imgCactus.naturalWidth + 1;
       lesCactus.push(nouveauCactus);
       nouveauCactus += imgCactus.naturalWidth + 1;
       lesCactus.push(nouveauCactus);
